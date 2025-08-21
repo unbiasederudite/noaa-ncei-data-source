@@ -13,7 +13,7 @@ class LocationData(ApiData):
         self.location_id = location_id
         self.params={"locationid": f"{self.location_id}"}
 
-        self.location_data_folder = self.locations_data_folder / f"{self.location_id.replace(":", "-")}"
+        self.location_data_folder = self.locations_data_folder / f"{self.location_id.replace(':', '=')}"
 
         self.location_client = LocationClient(API_TOKEN)
         self.station_client = StationClient(API_TOKEN)

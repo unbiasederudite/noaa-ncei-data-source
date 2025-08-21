@@ -12,7 +12,7 @@ class StationData(ApiData):
         self.station_id = station_id
         self.params={"stationid": f"{self.station_id}"}
 
-        self.station_data_folder = self.stations_data_folder / f"{self.station_id.replace(":", "-")}"
+        self.station_data_folder = self.stations_data_folder / f"{self.station_id.replace(':', '-')}"
 
         self.station_client = StationClient(API_TOKEN)
         self.dataset_client = DatasetClient(API_TOKEN)
