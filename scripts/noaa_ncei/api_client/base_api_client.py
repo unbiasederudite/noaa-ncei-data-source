@@ -1,54 +1,57 @@
+import time
 import requests
-import os
 
 class ApiClient:
+    base_url = "https://www.ncei.noaa.gov/cdo-web/api/v2"
+
     def __init__(
             self,
             api_token=None,
-            api_base_url='https://www.ncei.noaa.gov/cdo-web/api/v2'
-            ):
-        self.api_base_url = api_base_url
-        self.api_token = api_token or os.getenv("API_TOKEN")
-        if not self.api_token:
-            raise ValueError("Provide NOAA NCEI API token via parameter or API_TOKEN env var.")
-        self.headers = {"token": api_token}
+            max_retries=5,
+            retry_delay=5
+    ):
+        self.api_token = api_token
+        self.max_retries = max_retries
+        self.retry_delay = retry_delay
 
     def get(self, endpoint, params=None):
-        url = f"{self.api_base_url}/{endpoint}"
-        try:
-            response = requests.get(url, headers=self.headers, params=params, timeout=10)
-            if response.status_code == 200:
+        headers = {"token": self.api_token}
+        url = f"{self.base_url}/{endpoint}"
+        print(url)
+
+        for attempt in range(1, self.max_retries + 1):
+            try:
+                response = requests.get(url, headers=headers, params=params, timeout=30)
+                response.raise_for_status()
                 return response.json()
-            elif response.status_code == 400:
-                return {"error": "Bad request", "details": response.text}
-            elif response.status_code == 401:
-                return {"error": "Unauthorized – invalid or missing token"}
-            elif response.status_code == 404:
-                return {"error": "Not found"}
-            elif response.status_code == 429:
-                return {"error": "Too many requests – rate limited"}
-            elif response.status_code >= 500:
-                return {"error": "Server error", "status": response.status_code}
-            else:
-                return {"error": "Unexpected response", "status": response.status_code, "details": response.text}
-        except requests.exceptions.Timeout:
-            return {"error": "Request timed out"}
-        except requests.exceptions.RequestException as e:
-            return {"error": f"Request failed: {str(e)}"}
-        
-    def get_all_pages(self, endpoint, params=None, limit=1000):
+            except requests.RequestException as e:
+                print(f"(Attempt {attempt}) Request failed: {e}")
+                if attempt == self.max_retries:
+                    raise
+                print(f"Retrying in {self.retry_delay} seconds...")
+                time.sleep(self.retry_delay)
+
+    def iter_pages(self, endpoint, params=None, limit=1000):
         if params is None:
             params = {}
         offset = 1
-        all_results = []
         while True:
-            params.update({"limit": limit, "offset": offset})
-            response = self.get(endpoint, params=params)
-            if "results" not in response:
+            query_params = params.copy()
+            query_params.update({"limit": limit, "offset": offset})
+            response = self.get(endpoint, params=query_params)
+            results = response.get("results", [])
+
+            if not results:
                 break
-            all_results.extend(response["results"])
+
+            yield results
+
             meta = response.get("metadata", {}).get("resultset", {})
-            if offset + limit > meta.get("count", 0):
+            total_count = meta.get("count", 0)
+            returned = len(results)
+
+            if offset + returned > total_count:
                 break
-            offset += limit
-        return all_results
+
+            offset += returned
+            time.sleep(0.1)
