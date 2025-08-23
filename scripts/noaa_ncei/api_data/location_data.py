@@ -4,23 +4,32 @@ from noaa_ncei.api_client.data_client import DataClient
 from noaa_ncei.api_client.dataset_client import DatasetClient
 from noaa_ncei.api_client.data_type_client import DataTypeClient
 from noaa_ncei.api_client.data_category_client import DataCategoryClient
-from noaa_ncei.config import API_TOKEN, CURRENT_FILE
-from noaa_ncei.base_api_data import ApiData
+from noaa_ncei.api_data.config import API_TOKEN, CURRENT_FILE
+from noaa_ncei.api_data.base_api_data import ApiData
+import os
 
 class LocationData(ApiData):
-    locations_data_folder = CURRENT_FILE.parent.parent.parent / "data" / "locations"
-    def __init__(self, location_id):
-        self.location_id = location_id
-        self.params={"locationid": f"{self.location_id}"}
+    def __init__(
+            self,
+            location_id,
+            locations_data_folder = os.path.join(CURRENT_FILE.parents[3], "data", "locations"),
+            **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.location_type, self.location_id = location_id.split(':', 1)
+        self.params={"locationid": f"{self.location_type}:{self.location_id}"}
 
-        self.location_data_folder = self.locations_data_folder / f"{self.location_id.replace(":", "-")}"
+        self.locations_data_folder = locations_data_folder
+        self.location_data_folder = os.path.join(self.locations_data_folder, self.location_type, self.location_id)
 
-        self.location_client = LocationClient(API_TOKEN)
-        self.station_client = StationClient(API_TOKEN)
-        self.dataset_client = DatasetClient(API_TOKEN)
-        self.data_category_client = DataCategoryClient(API_TOKEN)
-        self.data_type_client = DataTypeClient(API_TOKEN)
-        self.data_client = DataClient(API_TOKEN)
+        token = self.api_token or API_TOKEN
+
+        self.location_client = LocationClient(token)
+        self.station_client = StationClient(token)
+        self.dataset_client = DatasetClient(token)
+        self.data_category_client = DataCategoryClient(token)
+        self.data_type_client = DataTypeClient(token)
+        self.data_client = DataClient(token)
     
     def fetch_location_datasets(
         self,
@@ -35,7 +44,6 @@ class LocationData(ApiData):
             "datatypeid": datatypeid,
         }
         filename_parts = [
-            self.location_id,
             f"start-{startdate}" if startdate else None,
             f"end-{enddate}" if enddate else None,
             f"datatype-{datatypeid}" if datatypeid else None,
@@ -64,7 +72,6 @@ class LocationData(ApiData):
             "datasetid": datasetid,
         }
         filename_parts = [
-            self.location_id,
             f"start-{startdate}" if startdate else None,
             f"end-{enddate}" if enddate else None,
             f"dataset-{datasetid}" if datasetid else None,
@@ -95,7 +102,6 @@ class LocationData(ApiData):
             "datacategoryid": datacategoryid,
         }
         filename_parts = [
-            self.location_id,
             f"start-{startdate}" if startdate else None,
             f"end-{enddate}" if enddate else None,
             f"dataset-{datasetid}" if datasetid else None,
@@ -129,7 +135,6 @@ class LocationData(ApiData):
             "datatypeid": datatypeid,
         }
         filename_parts = [
-            self.location_id,
             f"start-{startdate}" if startdate else None,
             f"end-{enddate}" if enddate else None,
             f"dataset-{datasetid}" if datasetid else None,
@@ -175,7 +180,6 @@ class LocationData(ApiData):
             "includemetadata": includemetadata,
         }
         filename_parts = [
-            self.location_id,
             f"start-{startdate}",
             f"end-{enddate}",
             f"dataset-{datasetid}",
@@ -197,11 +201,10 @@ class LocationData(ApiData):
         self,
         format=None
     ):
-        filename_parts = [
-            self.location_id,
-        ]
+        filename_parts = []
+
         return self._fetch_info_generic(
-            base_name="location",
+            base_name="location_info",
             id_key="locationid",
             csv_func=self.location_client.get_location_info_csv,
             df_func=self.location_client.get_location_info_df,
