@@ -2,8 +2,12 @@ import requests
 import os
 
 class ApiClient:
-    api_base_url = 'https://www.ncei.noaa.gov/cdo-web/api/v2'
-    def __init__(self, api_token=None):
+    def __init__(
+            self,
+            api_token=None,
+            api_base_url='https://www.ncei.noaa.gov/cdo-web/api/v2'
+            ):
+        self.api_base_url = api_base_url
         self.api_token = api_token or os.getenv("API_TOKEN")
         if not self.api_token:
             raise ValueError("Provide NOAA NCEI API token via parameter or API_TOKEN env var.")
