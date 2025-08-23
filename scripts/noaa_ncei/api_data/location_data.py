@@ -17,9 +17,9 @@ class LocationData(ApiData):
         self.locations_data_folder = locations_data_folder
         self.location_data_folder = os.path.join(self.locations_data_folder, self.location_type, self.location_id)
 
-        token = self.api_token or API_TOKEN
+        self.api_token = kwargs.get("api_token") or API_TOKEN
 
-        self.api_client = ApiClient(token)
+        self.api_client = ApiClient(api_token=self.api_token)
 
     def fetch_location_datasets(
             self, 

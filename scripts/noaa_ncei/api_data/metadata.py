@@ -14,9 +14,9 @@ class Metadata(ApiData):
 
         self.metadata_folder = metadata_folder
 
-        token = self.api_token or API_TOKEN
+        self.api_token = kwargs.get("api_token") or API_TOKEN
 
-        self.api_client = ApiClient(token)
+        self.api_client = ApiClient(api_token=self.api_token)
 
     def fetch_data_categories(
         self,

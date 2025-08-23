@@ -17,9 +17,9 @@ class StationData(ApiData):
         self.stations_data_folder = stations_data_folder
         self.station_data_folder = os.path.join(self.stations_data_folder, self.station_id)
 
-        token = self.api_token or API_TOKEN
+        self.api_token = kwargs.get("api_token") or API_TOKEN
 
-        self.api_client = ApiClient(token)
+        self.api_client = ApiClient(api_token=self.api_token)
 
     def fetch_station_datasets(self, datatypeid=None, startdate=None, enddate=None, format=None, limit=1000):
         params_extra = {
