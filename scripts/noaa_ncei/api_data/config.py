@@ -20,4 +20,4 @@ PARAMETER_TYPES = {
     "extent": str
 }
 
-FORMAT_TYPES = [None, 'df', 'csv']
+FORMAT_TYPES = [None, 'csv']

@@ -2,6 +2,7 @@ from noaa_ncei.api_data.config import PARAMETER_TYPES, FORMAT_TYPES
 from noaa_ncei.api_client.base_api_client import ApiClient
 from pathlib import Path
 import os 
+import csv
 
 class ApiData(ApiClient):
     def __init__(self, **kwargs):
@@ -19,7 +20,7 @@ class ApiData(ApiClient):
                     )
 
     @staticmethod
-    def build_filename(base, *args, ext="csv"):
+    def build_filename(base, *args, ext):
         parts = [base]
         cleaned_args = [
             str(arg).replace('&', '_').replace(':', '-') 
@@ -29,23 +30,40 @@ class ApiData(ApiClient):
         parts.extend(cleaned_args)
         filename = "_".join(parts) + f".{ext}"
         return filename
-    
+
+    @staticmethod 
+    def save_to_csv(iterator, file_path, fieldnames=None):
+        first_chunk = True
+        with open(file_path, 'w', newline='', encoding='utf-8') as f:
+            writer = None
+            for chunk in iterator:
+                if chunk:
+                    if first_chunk:
+                        if not fieldnames:
+                            fieldnames = list(chunk[0].keys())
+                        writer = csv.DictWriter(f, fieldnames=fieldnames)
+                        writer.writeheader()
+                        first_chunk = False
+                    for item in chunk:
+                        writer.writerow(item)
+        return file_path
+
     def _fetch_generic(
         self,
-        base_name,
-        params_extra=None,
-        csv_func=None,
-        df_func=None,
-        default_func=None,
+        api_endpoint,
         filename_parts=None,
+        params_extra=None,
+        limit=1000,
         format=None,
         data_folder=None
-    ):
+    ):  
         params = self.params.copy()
         if params_extra:
             params.update({k: v for k, v in params_extra.items() if v is not None})
-
+        print(params)
         self.check_parameter_types(params)
+
+        iterator = self.iter_pages(api_endpoint, params, limit)
 
         allowed_formats = FORMAT_TYPES
         if format not in allowed_formats:
@@ -55,42 +73,8 @@ class ApiData(ApiClient):
             if data_folder is None:
                 raise ValueError("data_folder must be provided when saving CSV output")
             Path(data_folder).mkdir(parents=True, exist_ok=True)
-            filename = self.build_filename(base_name, *filename_parts)
+            filename = self.build_filename(api_endpoint, *filename_parts, ext=format)
             file_path = os.path.join(data_folder, filename)
-            return csv_func(file_path=file_path, **params)
+            return self.save_to_csv(iterator, file_path)
 
-        if format == 'df':
-            return df_func(**params)
-
-        return default_func(**params)
-    
-    def _fetch_info_generic(
-        self,
-        base_name,
-        id_key,
-        csv_func=None,
-        df_func=None,
-        default_func=None,
-        filename_parts=None,
-        format=None,
-        data_folder=None
-    ):
-        allowed_formats = FORMAT_TYPES
-        if format not in allowed_formats:
-            raise ValueError(f"Invalid format: {format}. Allowed values are: {allowed_formats}")
-        
-        Path(data_folder).mkdir(parents=True, exist_ok=True)
-        filename = self.build_filename(base_name, *filename_parts)
-        file_path = os.path.join(data_folder, filename)
-
-        identifier = self.params[id_key]
-
-        if format == 'csv':
-            if data_folder is None:
-                raise ValueError("data_folder must be provided when saving CSV output")
-            return csv_func(identifier, file_path)
-
-        if format == 'df':
-            return df_func(identifier)
-
-        return default_func(identifier)
+        return iterator
