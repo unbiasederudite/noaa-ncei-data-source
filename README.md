@@ -14,7 +14,7 @@ To gain access to NOAA NCEI CDO Web Services, [request Web Services token](https
 In the folder `noaa-ncei-data-source/scripts`, there are scripts that demonstrate basic use cases of the NOAA NCEI CDO Web Services. These scripts retrieve data in `CSV` format, but the repository also supports data in `Pandas DataFrame` format, in addition to the standard `JSON` API response format.
 
 * `noaa-ncei-data-source/scripts/fetch_metadata_csv.py` fetches all metadata of the NOAA NCEI CDO Web Services.
-* `noaa-ncei-data-source/scripts/fetch_munich_city_data_csv.py` fetches basic climate data from the Global Historical Climate Network Daily (GHCND) dataset from the Munich city location.
+* `noaa-ncei-data-source/scripts/fetch_us_zip_data_csv.py` fetches basic climate data from the Global Historical Climate Network Daily (GHCND) dataset from the US ZIP location.
 * `noaa-ncei-data-source/scripts/fetch_salzburg_station_data_csv.py` fetches basic climate data from the Global Historical Climate Network Daily (GHCND) dataset for the Salzburg station.
 
 For more information about CDO Web Services read the documentation for [CDO Web Services guide](https://www.ncdc.noaa.gov/cdo-web/webservices/v2).
