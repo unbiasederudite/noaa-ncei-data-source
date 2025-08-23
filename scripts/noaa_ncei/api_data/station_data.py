@@ -3,22 +3,31 @@ from noaa_ncei.api_client.data_client import DataClient
 from noaa_ncei.api_client.dataset_client import DatasetClient
 from noaa_ncei.api_client.data_type_client import DataTypeClient
 from noaa_ncei.api_client.data_category_client import DataCategoryClient
-from noaa_ncei.config import API_TOKEN, CURRENT_FILE
-from noaa_ncei.base_api_data import ApiData
+from noaa_ncei.api_data.config import API_TOKEN, CURRENT_FILE
+from noaa_ncei.api_data.base_api_data import ApiData
+import os
 
 class StationData(ApiData):
-    stations_data_folder = CURRENT_FILE.parent.parent.parent / "data" / "stations"
-    def __init__(self, station_id):
-        self.station_id = station_id
-        self.params={"stationid": f"{self.station_id}"}
+    def __init__(
+            self,
+            station_id,
+            stations_data_folder = os.path.join(CURRENT_FILE.parents[3], "data", "stations"),
+            **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.station_dataset, self.station_id = station_id.split(':', 1)
+        self.params={"stationid": f"{self.station_dataset}:{self.station_id}"}
 
-        self.station_data_folder = self.stations_data_folder / f"{self.station_id.replace(":", "-")}"
+        self.stations_data_folder = stations_data_folder
+        self.station_data_folder = os.path.join(self.stations_data_folder, self.station_id)
 
-        self.station_client = StationClient(API_TOKEN)
-        self.dataset_client = DatasetClient(API_TOKEN)
-        self.data_category_client = DataCategoryClient(API_TOKEN)
-        self.data_type_client = DataTypeClient(API_TOKEN)
-        self.data_client = DataClient(API_TOKEN)
+        token = self.api_token or API_TOKEN
+
+        self.station_client = StationClient(token)
+        self.dataset_client = DatasetClient(token)
+        self.data_category_client = DataCategoryClient(token)
+        self.data_type_client = DataTypeClient(token)
+        self.data_client = DataClient(token)
     
     def fetch_station_datasets(
         self,
@@ -33,7 +42,6 @@ class StationData(ApiData):
             "datatypeid": datatypeid,
         }
         filename_parts = [
-            self.station_id,
             f"start-{startdate}" if startdate else None,
             f"end-{enddate}" if enddate else None,
             f"datatype-{datatypeid}" if datatypeid else None,
@@ -62,7 +70,6 @@ class StationData(ApiData):
             "datasetid": datasetid,
         }
         filename_parts = [
-            self.station_id,
             f"start-{startdate}" if startdate else None,
             f"end-{enddate}" if enddate else None,
             f"dataset-{datasetid}" if datasetid else None,
@@ -93,7 +100,6 @@ class StationData(ApiData):
             "datacategoryid": datacategoryid,
         }
         filename_parts = [
-            self.station_id,
             f"start-{startdate}" if startdate else None,
             f"end-{enddate}" if enddate else None,
             f"dataset-{datasetid}" if datasetid else None,
@@ -138,7 +144,6 @@ class StationData(ApiData):
             "includemetadata": includemetadata,
         }
         filename_parts = [
-            self.station_id,
             f"start-{startdate}",
             f"end-{enddate}",
             f"dataset-{datasetid}",
@@ -160,11 +165,10 @@ class StationData(ApiData):
         self,
         format=None
     ):
-        filename_parts = [
-            self.station_id,
-        ]
+        filename_parts = []
+
         return self._fetch_info_generic(
-            base_name="station",
+            base_name="station_info",
             id_key="stationid",
             csv_func=self.station_client.get_station_info_csv,
             df_func=self.station_client.get_station_info_df,
