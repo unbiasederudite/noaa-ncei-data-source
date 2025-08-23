@@ -2,7 +2,7 @@ import requests
 import os
 
 class ApiClient:
-    api_base_url = 'https://www.ncei.noaa.gov/cdo-web/api/v2/'
+    api_base_url = 'https://www.ncei.noaa.gov/cdo-web/api/v2'
     def __init__(self, api_token=None):
         self.api_token = api_token or os.getenv("API_TOKEN")
         if not self.api_token:
@@ -10,7 +10,7 @@ class ApiClient:
         self.headers = {"token": api_token}
 
     def get(self, endpoint, params=None):
-        url = f"{self.api_base_url}{endpoint}"
+        url = f"{self.api_base_url}/{endpoint}"
         try:
             response = requests.get(url, headers=self.headers, params=params, timeout=10)
             if response.status_code == 200:
