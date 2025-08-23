@@ -2,10 +2,6 @@ from noaa_ncei.api_data.station_data import StationData
 
 munich_data = StationData("GHCND:AU000006306")
 
-print("Fetching Salzburg Station information...")
-station_info_file_path = munich_data.fetch_station_info(format="csv")
-print(f"Salzburg Station information saved to {station_info_file_path}")
-
 print("Fetching Salzburg Station Datasets data...")
 station_datasets_file_path = munich_data.fetch_station_datasets(format="csv")
 print(f"Salzburg Station Datasets data saved to {station_datasets_file_path}")
